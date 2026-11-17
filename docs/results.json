@@ -1,0 +1,541 @@
+{
+ "setup": {
+  "base_parameters": 875264,
+  "steps": 300,
+  "batch_size": 16,
+  "context": 128,
+  "tokens_per_run": 614400,
+  "weight_decay": 0.0,
+  "warmup_steps": 20,
+  "grad_clip": 1.0,
+  "alpha_rule": "alpha = 2 * rank",
+  "seed": 0,
+  "learning_rate_choice": {
+   "steps": 100,
+   "metric": "loss on the code dev split (held out from train and val)",
+   "full": {
+    "grid": {
+     "0.0001": 2.5102,
+     "0.0003": 2.3045,
+     "0.001": 2.159,
+     "0.003": 2.1494
+    },
+    "chosen": 0.003
+   },
+   "lora": {
+    "grid": {
+     "0.001": 2.5861,
+     "0.003": 2.4254,
+     "0.01": 2.3177,
+     "0.03": 2.3288,
+     "0.1": 4.64
+    },
+    "chosen": 0.01
+   }
+  },
+  "hardware": {
+   "cpu": "Intel(R) Xeon(R) Processor @ 2.30GHz",
+   "cores": 4,
+   "platform": "Linux-6.18.44-fc-v470-x86_64-with-glibc2.39",
+   "python": "3.13.18",
+   "numpy": "2.5.3",
+   "blas_threads_per_run": 1
+  },
+  "data": {
+   "code": {
+    "documents_train": 240,
+    "documents_dev": 15,
+    "documents_val": 34,
+    "tokens_train": 753582,
+    "tokens_val": 94848
+   },
+   "js": {
+    "documents_train": 230,
+    "documents_dev": 15,
+    "documents_val": 27,
+    "tokens_train": 509387,
+    "tokens_val": 62848
+   },
+   "old": {
+    "tokens_val": 172032
+   }
+  }
+ },
+ "base": {
+  "code": 3.1446,
+  "js": 3.451,
+  "old": 2.4039
+ },
+ "methods": [
+  {
+   "name": "full",
+   "label": "Full fine-tune",
+   "kind": "full",
+   "rank": null,
+   "targets": null,
+   "lr": 0.003,
+   "trainable_parameters": 875264,
+   "seconds": 295.4,
+   "final_train_loss": 1.7057,
+   "val_loss": {
+    "code": 1.6136,
+    "js": 3.5426,
+    "old": 3.2874
+   },
+   "trainable_percent": 100.0,
+   "curve": [
+    {
+     "step": 50,
+     "train_loss": 2.4991,
+     "seconds": 55.6,
+     "old_loss": 3.1475,
+     "new_loss": 1.5269
+    },
+    {
+     "step": 100,
+     "train_loss": 2.2551,
+     "seconds": 103.4,
+     "old_loss": 3.2062,
+     "new_loss": 1.1927
+    },
+    {
+     "step": 150,
+     "train_loss": 2.0232,
+     "seconds": 158.6,
+     "old_loss": 3.103,
+     "new_loss": 1.2201
+    },
+    {
+     "step": 200,
+     "train_loss": 1.899,
+     "seconds": 199.6,
+     "old_loss": 3.0475,
+     "new_loss": 1.0287
+    },
+    {
+     "step": 250,
+     "train_loss": 1.7543,
+     "seconds": 245.8,
+     "old_loss": 3.0232,
+     "new_loss": 0.9066
+    },
+    {
+     "step": 300,
+     "train_loss": 1.7057,
+     "seconds": 293.8,
+     "old_loss": 2.9885,
+     "new_loss": 0.8604
+    }
+   ]
+  },
+  {
+   "name": "lora_r1",
+   "label": "LoRA r=1",
+   "kind": "lora",
+   "rank": 1,
+   "targets": [
+    "attn.qkv",
+    "attn.proj",
+    "mlp.fc",
+    "mlp.proj"
+   ],
+   "lr": 0.01,
+   "trainable_parameters": 8192,
+   "seconds": 275.1,
+   "final_train_loss": 2.3924,
+   "val_loss": {
+    "code": 2.2364,
+    "js": 3.4505,
+    "old": 2.6751
+   },
+   "trainable_percent": 0.94,
+   "curve": [
+    {
+     "step": 50,
+     "train_loss": 2.7199,
+     "seconds": 53.0,
+     "old_loss": 2.4859,
+     "new_loss": 2.1866
+    },
+    {
+     "step": 100,
+     "train_loss": 2.5433,
+     "seconds": 98.9,
+     "old_loss": 2.5353,
+     "new_loss": 2.036
+    },
+    {
+     "step": 150,
+     "train_loss": 2.4272,
+     "seconds": 150.6,
+     "old_loss": 2.5415,
+     "new_loss": 2.0341
+    },
+    {
+     "step": 200,
+     "train_loss": 2.407,
+     "seconds": 192.5,
+     "old_loss": 2.5562,
+     "new_loss": 2.0095
+    },
+    {
+     "step": 250,
+     "train_loss": 2.365,
+     "seconds": 229.3,
+     "old_loss": 2.5734,
+     "new_loss": 1.9841
+    },
+    {
+     "step": 300,
+     "train_loss": 2.3924,
+     "seconds": 273.5,
+     "old_loss": 2.5654,
+     "new_loss": 1.9506
+    }
+   ]
+  },
+  {
+   "name": "lora_r4",
+   "label": "LoRA r=4",
+   "kind": "lora",
+   "rank": 4,
+   "targets": [
+    "attn.qkv",
+    "attn.proj",
+    "mlp.fc",
+    "mlp.proj"
+   ],
+   "lr": 0.01,
+   "trainable_parameters": 32768,
+   "seconds": 281.7,
+   "final_train_loss": 2.1191,
+   "val_loss": {
+    "code": 1.9507,
+    "js": 3.4625,
+    "old": 2.8462
+   },
+   "trainable_percent": 3.74,
+   "curve": [
+    {
+     "step": 50,
+     "train_loss": 2.5906,
+     "seconds": 52.1,
+     "old_loss": 2.6213,
+     "new_loss": 1.795
+    },
+    {
+     "step": 100,
+     "train_loss": 2.3721,
+     "seconds": 98.6,
+     "old_loss": 2.6552,
+     "new_loss": 1.61
+    },
+    {
+     "step": 150,
+     "train_loss": 2.2269,
+     "seconds": 152.0,
+     "old_loss": 2.6923,
+     "new_loss": 1.6084
+    },
+    {
+     "step": 200,
+     "train_loss": 2.1945,
+     "seconds": 193.4,
+     "old_loss": 2.7004,
+     "new_loss": 1.527
+    },
+    {
+     "step": 250,
+     "train_loss": 2.1136,
+     "seconds": 233.6,
+     "old_loss": 2.6994,
+     "new_loss": 1.4743
+    },
+    {
+     "step": 300,
+     "train_loss": 2.1191,
+     "seconds": 280.1,
+     "old_loss": 2.7045,
+     "new_loss": 1.4291
+    }
+   ]
+  },
+  {
+   "name": "lora_r16",
+   "label": "LoRA r=16",
+   "kind": "lora",
+   "rank": 16,
+   "targets": [
+    "attn.qkv",
+    "attn.proj",
+    "mlp.fc",
+    "mlp.proj"
+   ],
+   "lr": 0.01,
+   "trainable_parameters": 131072,
+   "seconds": 239.9,
+   "final_train_loss": 1.8778,
+   "val_loss": {
+    "code": 1.738,
+    "js": 3.4786,
+    "old": 3.0475
+   },
+   "trainable_percent": 14.98,
+   "curve": [
+    {
+     "step": 50,
+     "train_loss": 2.5125,
+     "seconds": 47.1,
+     "old_loss": 2.8693,
+     "new_loss": 1.667
+    },
+    {
+     "step": 100,
+     "train_loss": 2.297,
+     "seconds": 90.8,
+     "old_loss": 2.9012,
+     "new_loss": 1.3937
+    },
+    {
+     "step": 150,
+     "train_loss": 2.1226,
+     "seconds": 132.1,
+     "old_loss": 2.8997,
+     "new_loss": 1.4177
+    },
+    {
+     "step": 200,
+     "train_loss": 2.0455,
+     "seconds": 174.2,
+     "old_loss": 2.892,
+     "new_loss": 1.2342
+    },
+    {
+     "step": 250,
+     "train_loss": 1.9092,
+     "seconds": 205.0,
+     "old_loss": 2.8751,
+     "new_loss": 1.0916
+    },
+    {
+     "step": 300,
+     "train_loss": 1.8778,
+     "seconds": 238.9,
+     "old_loss": 2.8899,
+     "new_loss": 1.0289
+    }
+   ]
+  },
+  {
+   "name": "lora_r4_attn",
+   "label": "LoRA r=4, attention only",
+   "kind": "lora",
+   "rank": 4,
+   "targets": [
+    "attn.qkv",
+    "attn.proj"
+   ],
+   "lr": 0.01,
+   "trainable_parameters": 12288,
+   "seconds": 175.2,
+   "final_train_loss": 2.3953,
+   "val_loss": {
+    "code": 2.244,
+    "js": 3.4479,
+    "old": 2.7221
+   },
+   "trainable_percent": 1.4,
+   "curve": [
+    {
+     "step": 50,
+     "train_loss": 2.7467,
+     "seconds": 28.1,
+     "old_loss": 2.4879,
+     "new_loss": 2.1848
+    },
+    {
+     "step": 100,
+     "train_loss": 2.5719,
+     "seconds": 57.2,
+     "old_loss": 2.5382,
+     "new_loss": 2.056
+    },
+    {
+     "step": 150,
+     "train_loss": 2.4575,
+     "seconds": 85.1,
+     "old_loss": 2.5708,
+     "new_loss": 2.0427
+    },
+    {
+     "step": 200,
+     "train_loss": 2.428,
+     "seconds": 114.6,
+     "old_loss": 2.5647,
+     "new_loss": 1.9676
+    },
+    {
+     "step": 250,
+     "train_loss": 2.3713,
+     "seconds": 144.0,
+     "old_loss": 2.6016,
+     "new_loss": 1.9298
+    },
+    {
+     "step": 300,
+     "train_loss": 2.3953,
+     "seconds": 174.2,
+     "old_loss": 2.599,
+     "new_loss": 1.9056
+    }
+   ]
+  }
+ ],
+ "data_efficiency": [
+  {
+   "fraction": 0.1,
+   "train_tokens": 76535,
+   "val_loss": {
+    "code": 2.1188,
+    "js": 3.7345,
+    "old": 3.156
+   },
+   "final_train_loss": 1.7478
+  },
+  {
+   "fraction": 0.3,
+   "train_tokens": 232436,
+   "val_loss": {
+    "code": 2.0177,
+    "js": 3.5826,
+    "old": 2.9468
+   },
+   "final_train_loss": 1.9656
+  },
+  {
+   "fraction": 1.0,
+   "train_tokens": 753582,
+   "val_loss": {
+    "code": 1.9507,
+    "js": 3.4625,
+    "old": 2.8462
+   },
+   "final_train_loss": 2.1191
+  }
+ ],
+ "adapter_swap": {
+  "adapters": {
+   "code_r4": {
+    "code": 1.9507,
+    "js": 3.4625,
+    "old": 2.8462
+   },
+   "js_r4": {
+    "code": 3.6999,
+    "js": 2.1015,
+    "old": 3.2202
+   }
+  },
+  "swap_ms": 0.058,
+  "base_unchanged_after_swaps": true,
+  "base_after_detach": {
+   "code": 3.1446,
+   "js": 3.451,
+   "old": 2.4039
+  },
+  "js_training": {
+   "trainable_parameters": 32768,
+   "seconds": 229.4,
+   "val_loss": {
+    "code": 3.6999,
+    "js": 2.1015,
+    "old": 3.2202
+   }
+  }
+ },
+ "scale_sweep": {
+  "adapter": "code_r4",
+  "windows": 128,
+  "points": [
+   {
+    "scale": 0,
+    "old": 2.4668,
+    "code": 3.1707,
+    "js": 3.2797
+   },
+   {
+    "scale": 0.25,
+    "old": 2.4783,
+    "code": 2.6922,
+    "js": 3.2046
+   },
+   {
+    "scale": 0.5,
+    "old": 2.5388,
+    "code": 2.249,
+    "js": 3.1825
+   },
+   {
+    "scale": 0.75,
+    "old": 2.6576,
+    "code": 1.9478,
+    "js": 3.2145
+   },
+   {
+    "scale": 1,
+    "old": 2.8341,
+    "code": 1.8436,
+    "js": 3.3021
+   },
+   {
+    "scale": 1.25,
+    "old": 3.0626,
+    "code": 1.9074,
+    "js": 3.4503
+   },
+   {
+    "scale": 1.5,
+    "old": 3.3521,
+    "code": 2.1403,
+    "js": 3.6661
+   },
+   {
+    "scale": 1.75,
+    "old": 3.7157,
+    "code": 2.5468,
+    "js": 3.9596
+   },
+   {
+    "scale": 2,
+    "old": 4.1445,
+    "code": 3.0967,
+    "js": 4.3354
+   }
+  ]
+ },
+ "merge": {
+  "live_loss": 1.84363,
+  "merged_loss": 1.84363,
+  "max_abs_weight_drift_after_unmerge": 2.9802322387695312e-08,
+  "bit_for_bit_after_subtract": false,
+  "bit_for_bit_with_backup": true
+ },
+ "step_time_seconds": {
+  "full": 0.554,
+  "lora_r1": 0.583,
+  "lora_r4": 0.574,
+  "lora_r16": 0.626
+ },
+ "total_training_seconds": 3294.1,
+ "samples": {
+  "prompt": "def read_file(path):\n    with open(path) as f:\n        ",
+  "temperature": 0.8,
+  "top_k": 40,
+  "seed": 7,
+  "text": {
+   "base": "    grouped\n                    source client client.\n\n:param options:\n    s:\n    The tracestor to use for option.\n\nReturns:\n    The source can be",
+   "code_r4": "    return infile\n            path.path = (fig_get_compression)\n\nclass _(sys.jwinen(self), [0]))\n        if",
+   "js_r4": "    if (\n                   isString(context) === \"TLESTXINGE +\\\")\n                false;\n            }\n                );\n           "
+  }
+ }
+}

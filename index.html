@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lora-from-scratch: fine-tuning by hand</title>
+<meta name="description" content="Adapt a small pretrained transformer to new text with low-rank adapters written from scratch in numpy, then switch, blend, merge and break them live in the browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gentium+Book+Plus:ital,wght@0,400;0,700;1,400&family=Inconsolata:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f7f8fa; --panel: #ffffff; --ink: #14213d; --muted: #5b6478; --rule: #d5dae4; --soft: #eef1f7;
+  --accent: #1f4fbf; --accent-dark: #173c93; --warn: #b3261e; --ok: #1d6b3c;
+  --serif: "Gentium Book Plus", Georgia, serif; --mono: "Inconsolata", ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 18.5px/1.55 var(--serif); }
+.banner { background: var(--ink); color: #e6eaf5; font: 400 15.5px/1.4 var(--serif); padding: 8px 16px; text-align: center; }
+.banner a { color: #fff; }
+main { max-width: 1000px; margin: 0 auto; padding: 28px 16px 72px; }
+.col { max-width: 640px; }
+header.paper { border-bottom: 1px solid var(--rule); padding-bottom: 18px; margin-bottom: 8px; }
+h1 { font: 700 clamp(30px, 5vw, 42px)/1.12 var(--serif); margin: 6px 0 6px; max-width: 760px; }
+h1 code { font-family: var(--mono); font-weight: 700; color: var(--accent); }
+.byline { font: 400 16px var(--mono); color: var(--muted); margin: 0 0 14px; }
+.abstract { max-width: 640px; }
+.abstract b { font-variant: small-caps; letter-spacing: .05em; }
+nav.toc { font: 400 16px/1.5 var(--mono); margin-top: 14px; }
+nav.toc ol { margin: 4px 0 0; padding-left: 24px; columns: 2; column-gap: 28px; }
+nav.toc li { break-inside: avoid; }
+nav.toc a { text-decoration: none; }
+nav.toc a:hover { text-decoration: underline; }
+.facts { font: 400 15.5px/1.55 var(--mono); color: var(--muted); margin: 14px 0 0; overflow-wrap: anywhere; }
+.facts b { color: var(--ink); font-weight: 700; }
+section { padding-top: 30px; }
+h2 { font: 700 25px/1.25 var(--serif); margin: 0 0 8px; }
+h2 .n { color: var(--accent); margin-right: 10px; }
+h3 { font: 700 16px/1.3 var(--mono); margin: 0 0 6px; }
+p { margin: 0 0 11px; }
+code { font-family: var(--mono); font-size: 0.93em; }
+a { color: var(--accent); }
+figure.fig { margin: 22px 0 8px; padding: 0; }
+.figbox { background: var(--panel); border: 1px solid var(--rule); border-radius: 2px; padding: 16px; }
+figcaption { font: 400 16.5px/1.45 var(--serif); color: #2c3650; margin-top: 8px; max-width: 760px; }
+figcaption b { font-weight: 700; color: var(--ink); }
+.figctl { border-bottom: 1px solid var(--rule); margin: -16px -16px 14px; padding: 12px 16px 14px; background: var(--soft); }
+.grid-gen { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 24px; }
+.grid-eq { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 860px) { .grid-gen, .grid-eq { grid-template-columns: minmax(0, 1fr); gap: 16px; } .grid-3 { grid-template-columns: minmax(0, 1fr); } nav.toc ol { columns: 1; } }
+label, .lab { display: block; font: 700 14px/1.3 var(--mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 12px 0 4px; }
+label:first-child, .lab:first-child { margin-top: 0; }
+textarea, select, input[type=number] { width: 100%; font: 400 16px/1.4 var(--mono); background: #fff; color: var(--ink); border: 1px solid #b7c0d3; border-radius: 2px; padding: 7px 8px; }
+textarea { min-height: 84px; resize: vertical; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+input[type=file] { font: 400 14px var(--mono); max-width: 100%; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.val { font: 700 15px var(--mono); color: var(--accent); }
+button { font: 700 16px var(--serif); border: 1px solid var(--accent); background: #fff; color: var(--accent); padding: 7px 13px; border-radius: 2px; cursor: pointer; }
+button:hover { background: #e9efff; }
+button.primary { background: var(--accent); color: #fff; }
+button.primary:hover { background: var(--accent-dark); }
+button.small { font: 400 15px var(--mono); padding: 3px 9px; border-color: #b7c0d3; color: var(--ink); }
+button[aria-pressed=true] { background: var(--ink); color: #fff; border-color: var(--ink); }
+button:disabled { opacity: .5; cursor: default; }
+button:focus-visible, textarea:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.examples, .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.chips { font: 400 16px/2.05 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.chip { display: inline; padding: 2px 0; border-radius: 2px; border: 1px solid transparent; cursor: default; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.chip.prompt { border-bottom: 1px solid #8a94ab; }
+.chip.focus { outline: 2px solid var(--ink); }
+.chip.pin { outline: 2px solid var(--accent); }
+.chip i { color: rgba(20,33,61,.38); font-style: normal; }
+.legend { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font: 400 14px var(--mono); color: var(--muted); margin: 0 0 8px; }
+.legend span.sw { width: 26px; height: 14px; border: 1px solid var(--rule); display: inline-block; }
+.empty { border: 1px dashed #aab3c8; border-radius: 2px; padding: 14px; color: var(--muted); font-size: 17px; background: var(--bg); }
+.empty b { color: var(--ink); }
+.status { font: 400 15px/1.5 var(--mono); margin: 8px 0 0; min-height: 1.5em; }
+.status.err { color: var(--warn); }
+.status.ok { color: var(--ok); }
+.out { padding: 10px 12px; background: #fff; border: 1px solid var(--rule); border-radius: 2px; min-height: 110px; margin-top: 6px; }
+.out .chips { font-size: 15.5px; }
+.cmp h3 { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.cmp .out .chips { font-size: 14.5px; line-height: 2; }
+.tag { font: 700 13px var(--mono); padding: 1px 7px; border: 1px solid var(--accent); color: var(--accent); border-radius: 2px; white-space: nowrap; }
+.tag.off { border-color: var(--muted); color: var(--muted); }
+.bars { display: grid; gap: 5px; font: 400 15px var(--mono); }
+.bar { display: grid; grid-template-columns: 84px minmax(0, 1fr) 96px; gap: 8px; align-items: center; }
+.bar .t { white-space: pre; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+.bar.chosen .t { font-weight: 700; color: var(--accent); }
+.bar .track { position: relative; height: 18px; border-bottom: 1px solid var(--rule); }
+.bar .track i { position: absolute; left: 0; top: 0; height: 8px; background: #aab3c8; }
+.bar .track i + i { top: 9px; background: var(--accent); }
+.bar .p { text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; }
+.keyline { font: 400 14px var(--mono); color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+.keyline span::before { content: ""; display: inline-block; width: 14px; height: 6px; margin-right: 6px; vertical-align: middle; background: var(--c); }
+table { border-collapse: collapse; width: 100%; font: 400 15.5px var(--mono); }
+th, td { text-align: left; padding: 6px 10px 6px 0; border-bottom: 1px solid var(--rule); font-variant-numeric: tabular-nums; vertical-align: top; }
+thead th { border-top: 2px solid var(--ink); border-bottom: 1px solid var(--ink); }
+th { font-weight: 700; color: var(--ink); font-size: 14px; }
+td.num, th.num { text-align: right; }
+td.hit { background: rgba(31,79,191,.12); font-weight: 700; }
+td.bad { color: var(--warn); font-weight: 700; }
+.scroll { overflow-x: auto; }
+.stats { font: 400 14.5px/1.5 var(--mono); color: var(--muted); margin-top: 8px; }
+.errbox { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--warn); border-left-width: 5px; background: #fdf1f0; font: 400 15px/1.5 var(--mono); color: var(--warn); overflow-wrap: anywhere; }
+.okbox { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--ok); border-left-width: 5px; background: #eef7f1; font: 400 15px/1.5 var(--mono); color: var(--ok); overflow-wrap: anywhere; }
+.viz { width: 100%; }
+.viz svg { display: block; width: 100%; height: auto; }
+svg text { font-family: var(--mono); }
+.charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 28px; }
+@media (max-width: 860px) { .charts { grid-template-columns: minmax(0, 1fr); } }
+.parity { font: 400 16px/1.6 var(--mono); }
+.parity .pass { color: var(--ok); font-weight: 700; }
+.parity .fail { color: var(--warn); font-weight: 700; }
+.hash { font: 400 14px var(--mono); }
+ul.limits { padding-left: 20px; margin: 0 0 10px; max-width: 660px; }
+ul.limits li { margin-bottom: 6px; }
+footer { border-top: 1px solid var(--rule); margin-top: 36px; padding-top: 14px; color: var(--muted); font-size: 16px; max-width: 760px; }
+@media (max-width: 480px) { body { font-size: 17.5px; } .bar { grid-template-columns: 62px minmax(0, 1fr) 80px; } .out .chips { font-size: 14px; } th, td { padding-right: 7px; font-size: 14px; } .figbox { padding: 12px; } .figctl { margin: -12px -12px 12px; padding: 10px 12px 12px; } }
+</style>
+</head>
+<body>
+<div class="banner">Live demo by EmSoft. The "company data" here is public open-source code standing in for a client's own text; no client data is used. <a href="https://github.com/enxo7899/lora-from-scratch">Source</a></div>
+<main>
+  <header class="paper">
+    <h1><code>lora-from-scratch</code>: adapting a small language model to new text by training a small fraction of its weights</h1>
+    <p class="byline">EmSoft, lab notebook. Builds on <a href="https://github.com/enxo7899/transformer-from-scratch">transformer-from-scratch</a>.</p>
+    <p class="abstract col"><b>Abstract.</b> A small pretrained transformer is adapted to source code by training two thin matrices per layer instead of its weights. The backward pass, the adapters and the merge are written by hand, and every figure below runs the same adapter files in plain JavaScript.</p>
+    <nav class="toc" aria-label="Contents">Contents
+      <ol>
+        <li><a href="#try">Switching an adapter on</a></li>
+        <li><a href="#score">Measuring it</a></li>
+        <li><a href="#results">Five experiments</a></li>
+        <li><a href="#break">Trying to break it</a></li>
+        <li><a href="#limits">Limits and parity</a></li>
+      </ol>
+    </nav>
+    <p class="facts" id="facts">Loading model and adapters...</p>
+  </header>
+
+  <section id="try">
+    <h2><span class="n">1</span>Switching an adapter on</h2>
+    <p class="col">The base model has only read Python documentation. An adapter is a small file, a few hundred kilobytes at most, that changes how it writes. Figure 1 generates from one prompt and seed, so any difference between two runs is the adapter and nothing else. Each token is shaded by how unlikely the model found it.</p>
+    <figure class="fig">
+      <div class="figbox">
+        <div class="figctl">
+          <div class="grid-gen">
+            <div>
+              <label for="prompt">Prompt</label>
+              <textarea id="prompt" spellcheck="false">def read_file(path):
+    with open(path) as f:
+        </textarea>
+              <div class="examples" id="examples"></div>
+              <label for="seed">Seed</label>
+              <input type="number" id="seed" value="7" min="0" max="999999">
+              <label for="temp" class="row"><span>Temperature</span><span class="val" id="tempv"></span></label>
+              <input type="range" id="temp" min="0" max="2" step="0.05" value="0.8">
+              <label for="maxnew" class="row"><span>New tokens</span><span class="val" id="maxnewv"></span></label>
+              <input type="range" id="maxnew" min="8" max="100" step="1" value="48">
+            </div>
+            <div>
+              <div class="lab">Adapter</div>
+              <div class="seg" id="adapterSeg"></div>
+              <label for="scale" class="row"><span>Adapter scale</span><span class="val" id="scalev"></span></label>
+              <input type="range" id="scale" min="0" max="2" step="0.05" value="1" aria-describedby="scaleNote">
+              <p class="stats" id="scaleNote">1 is the strength it was trained at; 0 is the plain base model.</p>
+              <label for="upload">Load your own adapter file</label>
+              <input type="file" id="upload" accept=".lora">
+              <div class="actions"><button class="primary" id="go" disabled>Generate</button><button id="compare" disabled>Base, code and JavaScript side by side</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="legend" aria-hidden="true">expected <span class="sw" style="background:rgba(31,79,191,.06)"></span><span class="sw" style="background:rgba(31,79,191,.25)"></span><span class="sw" style="background:rgba(31,79,191,.5)"></span><span class="sw" style="background:rgba(31,79,191,.75)"></span> surprising; underlined = your prompt</div>
+        <div class="row"><h3 id="outTitle" style="margin:0">Output</h3><span class="tag off" id="outTag">adapter off</span></div>
+        <div class="out" id="chipsOut"><div class="empty"><b>Nothing generated yet.</b> Press Generate with the adapter off, then choose <b>Python source r=4</b> and press it again. Prompt and seed stay the same.</div></div>
+        <p class="status" id="genStatus"></p>
+        <div class="lab">At the hovered token: the base model against the current adapter</div>
+        <div class="keyline"><span style="--c:#aab3c8">base model</span><span style="--c:var(--accent)">with the adapter at this scale</span></div>
+        <div id="dist"><div class="empty">Hover or click a token above.</div></div>
+      </div>
+      <figcaption><b>Figure 1.</b> One prompt, one seed, one adapter at a time. Switching the adapter or moving the scale regenerates immediately. Bars compare the next-token probabilities of the plain base model and the adapted model at the hovered position.</figcaption>
+    </figure>
+    <figure class="fig cmp" id="cmpWrap" hidden>
+      <div class="figbox"><div class="grid-3" id="cmpOut"></div></div>
+      <figcaption><b>Figure 2.</b> The base model and the two adapters on the same prompt, seed and scale. The adapters share one set of base weights; only the small files differ.</figcaption>
+    </figure>
+  </section>
+
+  <section id="score">
+    <h2><span class="n">2</span>Measuring it</h2>
+    <p class="col">Looking at samples proves little. Figure 3 scores three 128-token passages the model never trained on, computed in this page with the same forward pass that generated the text above.</p>
+    <figure class="fig">
+      <div class="figbox">
+        <div class="figctl"><div class="row" style="justify-content:flex-start;gap:14px"><button id="scoreGo" disabled>Score the three passages</button><span class="status" id="scoreStatus" style="margin:0">Nine forward passes, a few seconds.</span></div></div>
+        <div class="scroll"><table id="scoreTable"></table></div>
+      </div>
+      <figcaption><b>Figure 3.</b> Held-out loss in nats per token (lower is better), one row per model and one column per passage, with each adapter at the scale chosen in Figure 1. The shaded cell in each adapter row is the passage it was trained for.</figcaption>
+    </figure>
+  </section>
+
+  <section id="results">
+    <h2><span class="n">3</span>Five experiments</h2>
+    <p class="col" id="resultsSub">Loading results...</p>
+    <h3 style="margin-top:18px">Experiment 1 and 2: base model, full fine-tune and LoRA at three ranks</h3>
+    <div class="charts">
+      <figure class="fig"><div class="figbox"><div class="viz" id="chRank"></div></div><figcaption><b>Figure 4.</b> Loss against rank on the new domain. Dashed lines: the untuned base and a full fine-tune.</figcaption></figure>
+      <figure class="fig"><div class="figbox"><div class="viz" id="chParams"></div></div><figcaption><b>Figure 5.</b> Trainable parameters against loss on the new domain.</figcaption></figure>
+    </div>
+    <h3 style="margin-top:18px">Experiments 3 and 4: forgetting, and less data</h3>
+    <div class="charts">
+      <figure class="fig"><div class="figbox"><div class="viz" id="chForget"></div></div><figcaption><b>Figure 6.</b> Loss on the original Python documentation after tuning, as an increase over the untouched base.</figcaption></figure>
+      <figure class="fig"><div class="figbox"><div class="viz" id="chEff"></div></div><figcaption><b>Figure 7.</b> LoRA r=4 trained on 10, 30 and 100 percent of the new-domain text, with the same number of steps.</figcaption></figure>
+    </div>
+    <h3 style="margin-top:18px">Experiment 5: adapter swapping</h3>
+    <p class="col" id="swapText"></p>
+    <figure class="fig"><div class="figbox"><div class="scroll"><table id="resTable"></table></div><p class="stats" id="resNote"></p></div><figcaption><b>Table 1.</b> Every measured number behind the figures, read from <code>docs/results.json</code>. Losses are nats per token on held-out validation documents.</figcaption></figure>
+  </section>
+
+  <section id="break">
+    <h2><span class="n">4</span>Trying to break it</h2>
+    <p class="col">Three ways to misuse an adapter, and what the code does about each.</p>
+    <figure class="fig">
+      <div class="figbox">
+        <div class="figctl"><div class="actions" style="margin:0"><button id="breakScale" disabled>Set scale to 2 and generate</button></div><p class="status" id="scaleStatus"></p></div>
+        <div class="charts"><div class="viz" id="chScale"></div><div class="scroll"><table id="scaleTable"></table></div></div>
+      </div>
+      <figcaption><b>Figure 8.</b> Push the scale to 2. The curves are Python measurements of the code adapter on the validation sets; the dashed vertical line follows the slider in Figure 1. The table scores the three passages in this page at scale 0, 1 and 2.</figcaption>
+    </figure>
+    <figure class="fig">
+      <div class="figbox">
+        <div class="figctl"><div class="actions" style="margin:0"><button id="badMix" disabled>Rank 4 matrices with a rank 16 partner</button><button id="badHeader" disabled>Header says rank 8, tensors are rank 4</button></div></div>
+        <div id="badOut"><div class="empty">Press one. The page should refuse it with a plain message and keep using the adapter it had.</div></div>
+      </div>
+      <figcaption><b>Figure 9.</b> Two damaged adapter files built from the real ones. Shapes are checked before anything is attached, so a bad file cannot change the model. You can also load your own file in Figure 1.</figcaption>
+    </figure>
+    <figure class="fig">
+      <div class="figbox">
+        <div class="figctl"><div class="actions" style="margin:0"><button id="mergeGo" disabled>Run merge, then unmerge</button></div></div>
+        <div class="scroll"><table id="mergeTable"></table></div>
+        <div id="mergeVerdict"></div>
+      </div>
+      <figcaption><b>Figure 10.</b> Merge the adapter into the base weights, then take it out. Each row fingerprints every base weight with SHA-256. Subtracting the product can leave float32 rounding; restoring a saved copy is exact.</figcaption>
+    </figure>
+  </section>
+
+  <section id="limits">
+    <h2><span class="n">5</span>Limits and parity</h2>
+    <div id="honest"></div>
+    <div class="lab">JavaScript against Python</div>
+    <div class="parity" id="parity">Checking...</div>
+  </section>
+
+  <footer>Built by <a href="https://github.com/enxo7899">EmSoft</a>. Text: Python standard library (PSF licence) and MIT-licensed JavaScript packages; see <a href="https://github.com/enxo7899/lora-from-scratch/blob/main/data/README.md">data/README.md</a>.</footer>
+</main>
+<script type="module" src="web/app.js"></script>
+</body>
+</html>
